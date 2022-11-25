@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/fs"
 	"path"
-	"syscall"
 
 	"github.com/tetratelabs/wazero/api"
 	internalsys "github.com/tetratelabs/wazero/internal/sys"
@@ -1156,7 +1155,7 @@ func openFile(ctx context.Context, fsc *internalsys.FSContext, name string) (fd 
 		errnoResult = errnoNoent
 	case errors.Is(err, fs.ErrExist):
 		errnoResult = errnoExist
-	case errors.Is(err, syscall.EBADF):
+	case errors.Is(err, fs.ErrClosed):
 		// fsc.OpenFile currently returns this on out of file descriptors
 		errnoResult = errnoBadf
 	default:

@@ -7,7 +7,6 @@ import (
 	"math"
 	"path"
 	"sync/atomic"
-	"syscall"
 )
 
 const (
@@ -127,15 +126,15 @@ func (c *FSContext) OpenFile(_ context.Context, name string /* TODO: flags int, 
 	}
 
 	newFD := c.nextFD()
-	if newFD == 0 { // TODO: out of file descriptors
+	if newFD == 0 {
 		_ = f.Close()
-		return 0, syscall.EBADF
+		return 0, fs.ErrClosed
 	}
 	c.openedFiles[newFD] = &FileEntry{Path: name, File: f}
 	return newFD, nil
 }
 
-// CloseFile returns true if a file was opened and closed without error, or false if syscall.EBADF.
+// CloseFile returns true if a file was opened and closed without error, or false if fs.ErrInvalid.
 func (c *FSContext) CloseFile(_ context.Context, fd uint32) bool {
 	f, ok := c.openedFiles[fd]
 	if !ok {
@@ -166,7 +165,7 @@ func (c *FSContext) Close(context.Context) (err error) {
 	return
 }
 
-// FdWriter returns a valid writer for the given file descriptor or nil if syscall.EBADF.
+// FdWriter returns a valid writer for the given file descriptor or nil if fs.ErrInvalid.
 func FdWriter(ctx context.Context, sysCtx *Context, fd uint32) io.Writer {
 	switch fd {
 	case FdStdout:
@@ -178,7 +177,7 @@ func FdWriter(ctx context.Context, sysCtx *Context, fd uint32) io.Writer {
 		if f, ok := sysCtx.FS(ctx).OpenedFile(ctx, fd); !ok || f.File == nil {
 			return nil
 		} else if writer, ok := f.File.(io.Writer); !ok {
-			// Go's syscall.Write also returns EBADF if the FD is present, but not writeable
+			// Go's syscall.Write returns an error if the FD is present, but not writeable
 			return nil
 		} else {
 			return writer

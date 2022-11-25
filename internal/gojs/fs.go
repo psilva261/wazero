@@ -138,7 +138,7 @@ func (*jsfsFstat) invoke(ctx context.Context, mod api.Module, args ...interface{
 func syscallFstat(ctx context.Context, mod api.Module, fd uint32) (*jsSt, error) {
 	fsc := mod.(*wasm.CallContext).Sys.FS(ctx)
 	if f, ok := fsc.OpenedFile(ctx, fd); !ok {
-		return nil, syscall.EBADF
+		return nil, fs.ErrClosed
 	} else if stat, err := f.File.Stat(); err != nil {
 		return nil, err
 	} else {
@@ -170,7 +170,7 @@ func (*jsfsClose) invoke(ctx context.Context, mod api.Module, args ...interface{
 func syscallClose(ctx context.Context, mod api.Module, fd uint32) (err error) {
 	fsc := mod.(*wasm.CallContext).Sys.FS(ctx)
 	if ok := fsc.CloseFile(ctx, fd); !ok {
-		err = syscall.EBADF // already closed
+		err = fs.ErrClosed // already closed
 	}
 	return
 }
@@ -201,7 +201,7 @@ func (*jsfsRead) invoke(ctx context.Context, mod api.Module, args ...interface{}
 func syscallRead(ctx context.Context, mod api.Module, fd uint32, offset interface{}, p []byte) (n uint32, err error) {
 	r := fdReader(ctx, mod, fd)
 	if r == nil {
-		err = syscall.EBADF
+		err = fs.ErrClosed
 	}
 
 	if offset != nil {
@@ -210,7 +210,7 @@ func syscallRead(ctx context.Context, mod api.Module, fd uint32, offset interfac
 				return 0, err
 			}
 		} else {
-			return 0, syscall.ENOTSUP
+			return 0, fs.ErrClosed
 		}
 	}
 
@@ -253,7 +253,7 @@ func (*jsfsWrite) invoke(ctx context.Context, mod api.Module, args ...interface{
 // syscallWrite is like syscall.Write
 func syscallWrite(ctx context.Context, mod api.Module, fd uint32, offset interface{}, p []byte) (n uint32, err error) {
 	if writer := fdWriter(ctx, mod, fd); writer == nil {
-		err = syscall.EBADF
+		err = fs.ErrClosed
 	} else if nWritten, e := writer.Write(p); e == nil || e == io.EOF {
 		// fs_js.go cannot parse io.EOF so coerce it to nil.
 		// See https://github.com/golang/go/issues/43913
@@ -288,7 +288,7 @@ func syscallReaddir(ctx context.Context, mod api.Module, name string) (*objectAr
 	defer fsc.CloseFile(ctx, fd)
 
 	if f, ok := fsc.OpenedFile(ctx, fd); !ok {
-		return nil, syscall.EBADF
+		return nil, fs.ErrClosed
 	} else if d, ok := f.File.(fs.ReadDirFile); !ok {
 		return nil, syscall.ENOTDIR
 	} else if l, err := d.ReadDir(-1); err != nil {

@@ -544,7 +544,7 @@ func mapJSError(err error) *syscallErr {
 		return e
 	}
 	switch {
-	case errors.Is(err, syscall.EBADF), errors.Is(err, fs.ErrClosed):
+	case errors.Is(err, fs.ErrClosed):
 		return ebadf
 	case errors.Is(err, syscall.EINVAL), errors.Is(err, fs.ErrInvalid):
 		return einval
