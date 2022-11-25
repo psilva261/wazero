@@ -134,7 +134,7 @@ func (c *FSContext) OpenFile(_ context.Context, name string /* TODO: flags int, 
 	return newFD, nil
 }
 
-// CloseFile returns true if a file was opened and closed without error, or false if fs.ErrInvalid.
+// CloseFile returns true if a file was opened and closed without error, or false if fs.ErrClosed.
 func (c *FSContext) CloseFile(_ context.Context, fd uint32) bool {
 	f, ok := c.openedFiles[fd]
 	if !ok {
@@ -165,7 +165,7 @@ func (c *FSContext) Close(context.Context) (err error) {
 	return
 }
 
-// FdWriter returns a valid writer for the given file descriptor or nil if fs.ErrInvalid.
+// FdWriter returns a valid writer for the given file descriptor or nil if fs.ErrClosed.
 func FdWriter(ctx context.Context, sysCtx *Context, fd uint32) io.Writer {
 	switch fd {
 	case FdStdout:
